@@ -11,13 +11,13 @@ app.get("/approval", async (req, res) => {
     return res.status(400).send("Missing required parameters.");
   }
 
-  const approved = decision === "approved";
+  const approved = decision === "approve"; // should match the link parameter, not "approved"
 
   try {
     // Camunda SaaS message correlate endpoint:
     await axios.post("https://184280a2-6a55-4bca-aed3-169e7e399a45.saas-camunda.io/api/v1/message", {
-      messageName: "managerApprovalResponse",   // match your BPMN Message Catch Event
-      processInstanceId,
+      messageName: "managerApprovalResponse", // must match BPMN Message Name
+      correlationKey: processInstanceId,       // ✅ Correct key to use
       variables: {
         approved: { value: approved, type: "Boolean" }
       }
@@ -30,7 +30,7 @@ app.get("/approval", async (req, res) => {
 
     res.send(`Your decision (${decision}) has been recorded, thank you!`);
   } catch (err) {
-    console.error(err);
+    console.error(err.response?.data || err.message);
     res.status(500).send("Could not correlate with Camunda.");
   }
 });
