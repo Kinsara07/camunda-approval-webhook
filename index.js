@@ -1,43 +1,50 @@
-const express = require("express");
-const axios = require("axios");
+const express = require('express');
+const { ZBClient } = require('zeebe-node');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get("/approval", async (req, res) => {
+app.get('/approval', async (req, res) => {
   const { processInstanceId, decision } = req.query;
 
   if (!processInstanceId || !decision) {
-    return res.status(400).send("Missing required parameters.");
+    return res.status(400).send('Missing parameters.');
   }
 
-  const approved = decision === "approve"; // should match the link parameter, not "approved"
+  const approved = decision === 'approve';
 
   try {
-    console.log('Attempting to connect to Camunda...');
-    console.log('URL:', "https://184280a2-6a55-4bca-aed3-169e7e399a45.saas-camunda.io/api/v1/message");
-    console.log('Token exists:', !!process.env.CAMUNDA_API_TOKEN);
-    // Camunda SaaS message correlate endpoint:
-    await axios.post("https://184280a2-6a55-4bca-aed3-169e7e399a45.saas-camunda.io/v1/message", {
-      messageName: "managerApprovalResponse", // must match BPMN Message Name
-      correlationKey: processInstanceId,       // ✅ Correct key to use
-      variables: {
-        approved: { value: approved, type: "Boolean" }
-      }
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.CAMUNDA_API_TOKEN}`,
-        "Content-Type": "application/json"
-      }
+    const zbc = new ZBClient({
+      camundaCloud: {
+        clientId: process.env.CAMUNDA_CLIENT_ID,
+        clientSecret: process.env.CAMUNDA_CLIENT_SECRET,
+        clusterId: process.env.CAMUNDA_CLUSTER_ID,
+        region: process.env.CAMUNDA_REGION,
+      },
+      useTLS: true,
     });
 
-    res.send(`Your decision (${decision}) has been recorded, thank you!`);
+    console.log('✅ Connected to Camunda Cloud');
+
+    await zbc.publishMessage({
+      name: 'managerApprovalResponse',
+      correlationKey: processInstanceId,
+      variables: {
+        approved,
+      },
+      timeToLive: 60000,
+    });
+
+    console.log('✅ Message published successfully');
+    await zbc.close();
+    res.send('✅ Approval recorded.');
   } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).send("Could not correlate with Camunda.");
+    console.error('❌ Message publish failed:', err);
+    res.status(500).send('❌ Failed to publish message.');
   }
 });
 
 app.listen(port, () => {
-  console.log(`Approval webhook listening on port ${port}`);
+  console.log(`🚀 Approval webhook listening on port ${port}`);
 });
