@@ -14,6 +14,9 @@ app.get("/approval", async (req, res) => {
   const approved = decision === "approve"; // should match the link parameter, not "approved"
 
   try {
+    console.log('Attempting to connect to Camunda...');
+    console.log('URL:', "https://184280a2-6a55-4bca-aed3-169e7e399a45.saas-camunda.io/api/v1/message");
+    console.log('Token exists:', !!process.env.CAMUNDA_API_TOKEN);
     // Camunda SaaS message correlate endpoint:
     await axios.post("https://184280a2-6a55-4bca-aed3-169e7e399a45.saas-camunda.io/v1/message", {
       messageName: "managerApprovalResponse", // must match BPMN Message Name
