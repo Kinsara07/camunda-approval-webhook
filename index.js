@@ -133,7 +133,7 @@ app.get('/approve/:processInstanceId', async (req, res) => {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         text-align: center; 
                         padding: 50px 20px; 
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #0d6efd;
                         min-height: 100vh;
                         margin: 0;
                         display: flex;
